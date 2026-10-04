@@ -6,7 +6,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # --- API Keys ---
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+_raw_openai_key = os.getenv("OPENAI_API_KEY", "")
+OPENAI_API_KEY = _raw_openai_key if _raw_openai_key.startswith("sk-") and _raw_openai_key != "sk-..." else ""
 
 # --- Qdrant ---
 QDRANT_HOST = "localhost"

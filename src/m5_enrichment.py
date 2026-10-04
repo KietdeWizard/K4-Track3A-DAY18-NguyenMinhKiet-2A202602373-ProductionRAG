@@ -38,7 +38,6 @@ def summarize_chunk(text: str) -> str:
     Tạo summary ngắn cho chunk.
     Embed summary thay vì (hoặc cùng với) raw chunk → giảm noise.
     """
-    # TODO: Implement chunk summarization
     # if OPENAI_API_KEY:
     #     try:
     #         from openai import OpenAI
@@ -69,7 +68,6 @@ def generate_hypothesis_questions(text: str, n_questions: int = 3) -> list[str]:
     Generate câu hỏi mà chunk có thể trả lời.
     Index cả questions lẫn chunk → query match tốt hơn (bridge vocabulary gap).
     """
-    # TODO: Implement HyQA generation
     # if OPENAI_API_KEY:
     #     try:
     #         from openai import OpenAI
@@ -102,7 +100,6 @@ def contextual_prepend(text: str, document_title: str = "") -> str:
     Prepend context giải thích chunk nằm ở đâu trong document.
     Anthropic benchmark: giảm 49% retrieval failure (alone).
     """
-    # TODO: Implement contextual prepend
     # if OPENAI_API_KEY:
     #     try:
     #         from openai import OpenAI
@@ -133,7 +130,6 @@ def extract_metadata(text: str) -> dict:
     """
     LLM extract metadata tự động: topic, entities, date_range, category.
     """
-    # TODO: Implement auto metadata extraction
     # if OPENAI_API_KEY:
     #     try:
     #         import json as _json
@@ -163,7 +159,6 @@ def _enrich_single_call(text: str, source: str) -> dict:
 
     ⚠️ Cost optimization: 1 API call thay vì 4 calls riêng lẻ.
     """
-    # TODO: Implement combined enrichment (1 call/chunk)
     # if OPENAI_API_KEY:
     #     try:
     #         import json as _json
@@ -247,6 +242,85 @@ def enrich_chunks(
 
 
 # ─── Main ────────────────────────────────────────────────
+
+def summarize_chunk(text: str) -> str:
+    if OPENAI_API_KEY:
+        try:
+            from openai import OpenAI
+            response = OpenAI().chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "system", "content": "Tóm tắt đoạn văn sau trong 2-3 câu ngắn bằng tiếng Việt."},
+                          {"role": "user", "content": text}], max_tokens=150)
+            return response.choices[0].message.content.strip()
+        except Exception as exc:
+            print(f"  OpenAI summarize failed: {exc}")
+    sentences = [part.strip() for part in __import__("re").split(r"[.!?\n]", text) if part.strip()]
+    return ". ".join(sentences[:2]) + ("." if sentences else "")
+
+
+def generate_hypothesis_questions(text: str, n_questions: int = 3) -> list[str]:
+    if OPENAI_API_KEY:
+        try:
+            from openai import OpenAI
+            response = OpenAI().chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "system", "content": f"Tạo {n_questions} câu hỏi tiếng Việt mà đoạn văn có thể trả lời, mỗi câu một dòng."},
+                          {"role": "user", "content": text}], max_tokens=200)
+            return [line.strip().lstrip("0123456789.-) ") for line in response.choices[0].message.content.splitlines() if line.strip()][:n_questions]
+        except Exception as exc:
+            print(f"  OpenAI HyQA failed: {exc}")
+    sentences = [part.strip() for part in __import__("re").split(r"[.!?\n]", text) if len(part.strip()) > 10]
+    return [f"{sentence.rstrip('.')}?" for sentence in sentences[:n_questions]]
+
+
+def contextual_prepend(text: str, document_title: str = "") -> str:
+    if OPENAI_API_KEY:
+        try:
+            from openai import OpenAI
+            response = OpenAI().chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "system", "content": "Viết một câu tiếng Việt mô tả vị trí và chủ đề của đoạn văn. Chỉ trả về một câu."},
+                          {"role": "user", "content": f"Tài liệu: {document_title}\n\nĐoạn văn:\n{text}"}], max_tokens=80)
+            return f"{response.choices[0].message.content.strip()}\n\n{text}"
+        except Exception as exc:
+            print(f"  OpenAI contextual failed: {exc}")
+    prefix = f"Trích từ {document_title}. " if document_title else ""
+    return f"{prefix}{text}"
+
+
+def extract_metadata(text: str) -> dict:
+    if OPENAI_API_KEY:
+        try:
+            import json as _json
+            from openai import OpenAI
+            response = OpenAI().chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "system", "content": 'Trả về JSON với các trường topic, entities, category, language.'},
+                          {"role": "user", "content": text}], max_tokens=150)
+            return _json.loads(response.choices[0].message.content)
+        except Exception as exc:
+            print(f"  OpenAI metadata failed: {exc}")
+    return {"topic": "general", "entities": [], "category": "policy", "language": "vi"}
+
+
+def _enrich_single_call(text: str, source: str) -> dict:
+    if OPENAI_API_KEY:
+        try:
+            import json as _json
+            from openai import OpenAI
+            schema = '{"summary":"...","questions":["..."],"context":"...","metadata":{"topic":"...","entities":[],"category":"policy","language":"vi"}}'
+            response = OpenAI().chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "system", "content": f"Phân tích đoạn văn và chỉ trả về JSON theo schema: {schema}"},
+                          {"role": "user", "content": f"Tài liệu: {source}\n\nĐoạn văn:\n{text}"}], max_tokens=400)
+            result = _json.loads(response.choices[0].message.content)
+            return {"summary": result.get("summary", ""), "questions": result.get("questions", []),
+                    "context": result.get("context", ""), "metadata": result.get("metadata", {})}
+        except Exception as exc:
+            print(f"  OpenAI enrichment failed: {exc}")
+    return {"summary": summarize_chunk(text), "questions": generate_hypothesis_questions(text),
+            "context": f"Trích từ {source}." if source else "", "metadata": extract_metadata(text)}
+
 
 if __name__ == "__main__":
     sample = "Nhân viên chính thức được nghỉ phép năm 12 ngày làm việc mỗi năm. Số ngày nghỉ phép tăng thêm 1 ngày cho mỗi 5 năm thâm niên công tác."

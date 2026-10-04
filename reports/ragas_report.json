@@ -1,0 +1,101 @@
+{
+  "aggregate": {
+    "faithfulness": 0.78,
+    "answer_relevancy": 0.6438134495057821,
+    "context_precision": 0.937499999945625,
+    "context_recall": 0.7416666666666666
+  },
+  "num_questions": 20,
+  "failures": [
+    {
+      "question": "Bao lâu phải đổi mật khẩu một lần?",
+      "answer": "Không tìm thấy.",
+      "worst_metric": "faithfulness",
+      "score": 0.0,
+      "average_score": 0.45833333332291665,
+      "diagnosis": "LLM tự bịa thông tin ngoài tài liệu",
+      "suggested_fix": "Siết system prompt và giảm temperature về 0"
+    },
+    {
+      "question": "Nhân viên thử việc có được hưởng bảo hiểm sức khỏe PVI không?",
+      "answer": "Không tìm thấy.",
+      "worst_metric": "faithfulness",
+      "score": 0.0,
+      "average_score": 0.4999999999875,
+      "diagnosis": "LLM tự bịa thông tin ngoài tài liệu",
+      "suggested_fix": "Siết system prompt và giảm temperature về 0"
+    },
+    {
+      "question": "Một nhân viên Senior có 9 năm thâm niên được nghỉ bao nhiêu ngày phép năm và lương trong khoảng nào?",
+      "answer": "Nhân viên có 9 năm thâm niên sẽ được 18 ngày phép năm (15 + 3). Lương của nhân viên này được xác định theo chính sách lương của công ty, nhưng trong thông tin đã cung cấp không có thông tin cụ thể về mức lương. Do đó, không tìm thấy.",
+      "worst_metric": "answer_relevancy",
+      "score": 0.0,
+      "average_score": 0.5333333333229167,
+      "diagnosis": "Câu trả lời lệch trọng tâm câu hỏi",
+      "suggested_fix": "Viết lại prompt để trả lời trực tiếp hơn"
+    },
+    {
+      "question": "Khi phát hiện malware trên máy, nhân viên có nên tự xử lý không?",
+      "answer": "Nhân viên **không nên tự xử lý** malware mà không có sự hướng dẫn của đội CNTT.",
+      "worst_metric": "answer_relevancy",
+      "score": 0.0,
+      "average_score": 0.6666666666583333,
+      "diagnosis": "Câu trả lời lệch trọng tâm câu hỏi",
+      "suggested_fix": "Viết lại prompt để trả lời trực tiếp hơn"
+    },
+    {
+      "question": "Nhân viên tạm ứng 15 triệu, sau 20 ngày mới thanh toán. Bị phạt bao nhiêu?",
+      "answer": "Nhân viên tạm ứng 15 triệu và thanh toán sau 20 ngày. Theo quy định, khoản tạm ứng chưa thanh toán sau 15 ngày sẽ bị tính phí 2%/tháng trên số tiền chưa hoàn ứng. \n\nSố tiền phạt sẽ được tính như sau:\n\n- Thời gian quá hạn: 5 ngày (20 ngày - 15 ngày)\n- Số tiền bị phạt: 15.000.000 VNĐ\n- Phí phạt: 2%/tháng tương đương với 0,07%/ngày (2%/30 ngày).\n\nPhí phạt trong 5 ngày:\n15.000.000 VNĐ * 0,07% * 5 ngày = 5.250 VNĐ.\n\nVậy nhân viên sẽ bị phạt 5.250 VNĐ.",
+      "worst_metric": "faithfulness",
+      "score": 0.3,
+      "average_score": 0.6727555162388973,
+      "diagnosis": "LLM tự bịa thông tin ngoài tài liệu",
+      "suggested_fix": "Siết system prompt và giảm temperature về 0"
+    },
+    {
+      "question": "Muốn mua thiết bị trị giá 55 triệu cần ai phê duyệt?",
+      "answer": "Cần thêm phê duyệt của Kế toán trưởng.",
+      "worst_metric": "context_recall",
+      "score": 0.0,
+      "average_score": 0.7027344261588465,
+      "diagnosis": "Hệ thống bỏ sót đoạn văn liên quan",
+      "suggested_fix": "Cải thiện chunking hoặc bổ sung BM25"
+    },
+    {
+      "question": "Nhân viên thử việc có được nghỉ phép năm không?",
+      "answer": "Không tìm thấy.",
+      "worst_metric": "answer_relevancy",
+      "score": 0.0,
+      "average_score": 0.7083333333229167,
+      "diagnosis": "Câu trả lời lệch trọng tâm câu hỏi",
+      "suggested_fix": "Viết lại prompt để trả lời trực tiếp hơn"
+    },
+    {
+      "question": "Bảo hiểm sức khỏe PVI có hạn mức bao nhiêu cho nhân viên?",
+      "answer": "Bảo hiểm sức khỏe PVI có hạn mức 200.000 VNĐ cho nhân viên.",
+      "worst_metric": "context_recall",
+      "score": 0.0,
+      "average_score": 0.716472594308057,
+      "diagnosis": "Hệ thống bỏ sót đoạn văn liên quan",
+      "suggested_fix": "Cải thiện chunking hoặc bổ sung BM25"
+    },
+    {
+      "question": "Nghỉ phép không lương 20 ngày cần ai phê duyệt?",
+      "answer": "Nghỉ phép không lương 20 ngày cần phê duyệt của Giám đốc điều hành (CEO).",
+      "worst_metric": "context_recall",
+      "score": 0.5,
+      "average_score": 0.7167061243095768,
+      "diagnosis": "Hệ thống bỏ sót đoạn văn liên quan",
+      "suggested_fix": "Cải thiện chunking hoặc bổ sung BM25"
+    },
+    {
+      "question": "Nếu cần mua một chiếc laptop 30 triệu cho nhân viên mới, ai phê duyệt và cần gì từ phòng CNTT?",
+      "answer": "Nếu cần mua một chiếc laptop 30 triệu cho nhân viên mới, Giám đốc phòng ban sẽ phê duyệt vì giá trị đơn hàng vượt quá 5.000.000 VNĐ. Cần có xác nhận của phòng CNTT về cấu hình kỹ thuật của laptop trước khi đề xuất.",
+      "worst_metric": "faithfulness",
+      "score": 0.5,
+      "average_score": 0.776591110740477,
+      "diagnosis": "LLM tự bịa thông tin ngoài tài liệu",
+      "suggested_fix": "Siết system prompt và giảm temperature về 0"
+    }
+  ]
+}

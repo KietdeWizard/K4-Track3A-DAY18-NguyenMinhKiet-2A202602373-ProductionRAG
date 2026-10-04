@@ -92,7 +92,30 @@ def chunk_semantic(text: str, threshold: float = SEMANTIC_THRESHOLD,
     Split text by sentence similarity — nhóm câu cùng chủ đề.
     Tốt hơn basic vì không cắt giữa ý.
     """
-    # TODO: Implement semantic chunking
+    metadata = metadata or {}
+    sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+|\n\n', text) if s.strip()]
+    if not sentences:
+        return []
+    if len(sentences) == 1:
+        return [Chunk(sentences[0], {**metadata, "strategy": "semantic", "chunk_index": 0})]
+    try:
+        from sentence_transformers import SentenceTransformer
+        import numpy as np
+        embeddings = SentenceTransformer("all-MiniLM-L6-v2").encode(sentences)
+        groups, current = [], [sentences[0]]
+        for i in range(1, len(sentences)):
+            a, b = embeddings[i - 1], embeddings[i]
+            similarity = float(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b) + 1e-9))
+            if similarity < threshold:
+                groups.append(current)
+                current = [sentences[i]]
+            else:
+                current.append(sentences[i])
+        groups.append(current)
+    except Exception:
+        groups = [sentences]
+    return [Chunk(" ".join(group), {**metadata, "strategy": "semantic", "chunk_index": i})
+            for i, group in enumerate(groups)]
     # 1. from sentence_transformers import SentenceTransformer
     #    from numpy import dot
     #    from numpy.linalg import norm
@@ -121,7 +144,31 @@ def chunk_hierarchical(text: str, parent_size: int = HIERARCHICAL_PARENT_SIZE,
     Returns:
         (parents, children) — mỗi child có parent_id link đến parent.
     """
-    # TODO: Implement hierarchical chunking
+    metadata = metadata or {}
+    paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
+    parent_texts, current = [], ""
+    for paragraph in paragraphs:
+        if len(paragraph) > parent_size:
+            if current:
+                parent_texts.append(current.strip())
+                current = ""
+            parent_texts.extend(paragraph[i:i + parent_size] for i in range(0, len(paragraph), parent_size))
+        elif current and len(current) + 2 + len(paragraph) > parent_size:
+            parent_texts.append(current.strip())
+            current = paragraph
+        else:
+            current = f"{current}\n\n{paragraph}".strip()
+    if current:
+        parent_texts.append(current.strip())
+    parents, children = [], []
+    for index, parent_text in enumerate(parent_texts):
+        parent_id = f"parent_{index}"
+        parents.append(Chunk(parent_text, {**metadata, "chunk_type": "parent", "parent_id": parent_id}, parent_id))
+        for start in range(0, len(parent_text), child_size):
+            child_text = parent_text[start:start + child_size].strip()
+            if child_text:
+                children.append(Chunk(child_text, {**metadata, "chunk_type": "child", "parent_id": parent_id}, parent_id))
+    return parents, children
     # 1. metadata = metadata or {}
     # 2. Split text bằng "\n\n" → paragraphs
     # 3. Gộp paragraphs thành parent chunks (mỗi parent ≤ parent_size chars):
@@ -141,7 +188,27 @@ def chunk_structure_aware(text: str, metadata: dict | None = None) -> list[Chunk
     Parse markdown headers → chunk theo logical structure.
     Giữ nguyên tables, code blocks, lists — không cắt giữa chừng.
     """
-    # TODO: Implement structure-aware chunking
+    metadata = metadata or {}
+    chunks, current_lines, current_header = [], [], ""
+    header_re = re.compile(r"^#{1,3}\s+.+$")
+
+    def flush():
+        content = "\n".join(current_lines).strip()
+        if content:
+            section = current_header or "(preamble)"
+            chunks.append(Chunk(content, {**metadata, "section": section,
+                                           "strategy": "structure",
+                                           "chunk_index": len(chunks)}))
+
+    for line in text.splitlines():
+        if header_re.match(line.strip()):
+            flush()
+            current_lines = [line.strip()]
+            current_header = line.strip()
+        else:
+            current_lines.append(line)
+    flush()
+    return chunks
     # 1. metadata = metadata or {}
     # 2. sections = re.split(r'(^#{1,3}\s+.+$)', text, flags=re.MULTILINE)
     # 3. Duyệt sections:
